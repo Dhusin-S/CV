@@ -1,0 +1,160 @@
+{% extends 'admin_base.html' %}
+{% block title %}Executive Accreditation Report · Campus Voice{% endblock %}
+{% block content %}
+<main class="admin-page-content report-page page-enter">
+  <div class="report-toolbar wrap no-print">
+    <div class="report-toolbar-left">
+      <a class="button small outline" href="/dashboard">← Back to Overview</a>
+      <span class="report-tag">INSTITUTIONAL AUDIT COPY</span>
+    </div>
+    <div class="report-toolbar-right">
+      <a class="button small outline" href="/export.csv">Download CSV Data ↓</a>
+      <button class="button small dark" onclick="window.print()">Print / Export PDF ⎙</button>
+    </div>
+  </div>
+
+  <article class="report-paper panel">
+    <header class="report-header">
+      <div class="report-institution">
+        <div class="inst-brand">
+          <span class="brand-icon">CV</span>
+          <div>
+            <h1>CAMPUS VOICE — INSTITUTIONAL AUDIT & HEALTH REPORT</h1>
+            <p>Annual / Semester Student Feedback, Grievance Redressal & SLA Performance Audit</p>
+          </div>
+        </div>
+        <div class="report-meta-box">
+          <div><span>Report ID:</span><b>CV-REP-{{ generated_at[:10]|replace('-','') }}</b></div>
+          <div><span>Generated:</span><b>{{ generated_at }}</b></div>
+          <div><span>Auditor:</span><b>Administrator Session</b></div>
+        </div>
+      </div>
+      <div class="report-divider"></div>
+    </header>
+
+    <section class="report-section">
+      <h2 class="report-h2">1. Executive Performance Summary</h2>
+      <div class="report-kpi-grid">
+        <div class="rep-kpi">
+          <small>Total Feedback Received</small>
+          <strong>{{ summary.total_submissions }}</strong>
+          <span>Across all categories</span>
+        </div>
+        <div class="rep-kpi">
+          <small>Resolved / Implemented</small>
+          <strong>{{ summary.resolved_count }}</strong>
+          <span>Actioned by departments</span>
+        </div>
+        <div class="rep-kpi rep-kpi-accent">
+          <small>SLA Compliance Rate</small>
+          <strong>{{ summary.sla_compliance_rate }}%</strong>
+          <span>Resolved within target SLA</span>
+        </div>
+        <div class="rep-kpi">
+          <small>Negative Sentiment Share</small>
+          <strong>{{ analytics.negative_rate }}%</strong>
+          <span>General student distress index</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="report-section">
+      <h2 class="report-h2">2. Departmental Grievance & Resolution Matrix</h2>
+      <p class="section-desc">Performance and accountability breakdown across college administrative and academic departments.</p>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Department / Unit</th>
+              <th>Total Received</th>
+              <th>Resolved</th>
+              <th>Pending Action</th>
+              <th>Urgent / High Open</th>
+              <th>Resolution Rate</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in summary.departments %}
+            {% set rate = ((d.resolved / d.total * 100)|round(1)) if d.total > 0 else 0 %}
+            <tr>
+              <td><strong>{{ d.dept }}</strong></td>
+              <td>{{ d.total }}</td>
+              <td><b style="color:var(--accent);">{{ d.resolved }}</b></td>
+              <td>{{ d.pending }}</td>
+              <td>{% if d.high_open > 0 %}<span class="badge-alert">{{ d.high_open }} high</span>{% else %}0{% endif %}</td>
+              <td>{{ rate }}%</td>
+              <td>
+                {% if rate >= 60 %}
+                <span class="status-pill status-resolved">Good</span>
+                {% elif d.high_open > 0 %}
+                <span class="status-pill status-reviewing">Requires Attention</span>
+                {% else %}
+                <span class="status-pill status-in-progress">In Review</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7">No department data recorded yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-section two-col-report">
+      <div>
+        <h2 class="report-h2">3. Student Tone & Emotional Profile</h2>
+        <p class="section-desc">Automated NLP evaluation of student communication tone.</p>
+        <div class="emotion-summary-list">
+          {% for em, count in summary.emotion.items() %}
+          <div class="emotion-row">
+            <span>{{ em }}</span>
+            <div class="emotion-bar-track">
+              <div class="emotion-bar-fill" style="width: {{ (count / summary.total_submissions * 100)|round if summary.total_submissions > 0 else 0 }}%;"></div>
+            </div>
+            <strong>{{ count }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <h2 class="report-h2">4. Emerging Hotspots & Recurring Issues</h2>
+        <p class="section-desc">Categories and areas with highest complaint clustering.</p>
+        <div class="cluster-summary-list">
+          <div class="cluster-item">
+            <small>PRIMARY CONCENTRATION</small>
+            <strong>{{ analytics.top_category.name }}</strong>
+            <p>{{ analytics.top_category.count }} reports logged in this category.</p>
+          </div>
+          <div class="cluster-item">
+            <small>TOP CAMPUS LOCATION</small>
+            <strong>{{ analytics.top_location.name }}</strong>
+            <p>{{ analytics.top_location.count }} incidents pinned to this area.</p>
+          </div>
+          <div class="cluster-item">
+            <small>WEEK-OVER-WEEK MOMENTUM</small>
+            <strong>{{ analytics.trend_delta.direction|upper }} ({{ analytics.trend_delta.delta_percent }}%)</strong>
+            <p>{{ analytics.trend_delta.recent }} reports in last 7 days vs {{ analytics.trend_delta.prior }} prior week.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="report-footer">
+      <div class="sign-block">
+        <div class="sign-line"></div>
+        <span>Head of Campus Grievance Redressal</span>
+      </div>
+      <div class="sign-block">
+        <div class="sign-line"></div>
+        <span>Dean of Student Affairs / Principal</span>
+      </div>
+      <div class="report-seal">
+        <div class="seal-inner">CAMPUS VOICE<br>VERIFIED AUDIT</div>
+      </div>
+    </footer>
+  </article>
+</main>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'admin_base.html' %}
+{% block title %}Priority Queue · Live Triage · Campus Voice{% endblock %}
+{% block content %}
+<main class="admin-page-content queue-page">
+  <section class="page-heading queue-heading">
+    <div>
+      <span class="eyebrow">OPERATIONS / LIVE TRIAGE & SLA</span>
+      <h1>Priority <em>queue.</em></h1>
+      <p>Work the signals with the highest operational impact first. Scores combine urgency, recurrence, student upvotes, and SLA deadlines.</p>
+    </div>
+    <div class="queue-heading-actions">
+      <a class="button small outline" href="/dashboard">← Overview</a>
+      <a class="button small outline" href="/admin/report">Executive Report 📊</a>
+      <button class="button small dark" id="queueRefresh">Refresh <b>↻</b></button>
+    </div>
+  </section>
+
+  <section class="queue-commandbar panel">
+    <div class="queue-search">
+      <span>⌕</span>
+      <input id="queueSearch" type="search" placeholder="Search issues, categories, locations, departments, or reference…" autocomplete="off">
+    </div>
+    <select id="queueDepartment">
+      <option value="All">All Departments</option>
+      {% for d in departments %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+    </select>
+    <select id="queuePriority">
+      <option value="All">All priorities</option>
+      <option>High</option>
+      <option>Medium</option>
+      <option>Low</option>
+    </select>
+    <select id="queueStatus">
+      <option value="All">All open statuses</option>
+      <option>New</option>
+      <option>Reviewing</option>
+      <option>In Progress</option>
+    </select>
+    <select id="queueSLA">
+      <option value="All">All SLA states</option>
+      <option value="Overdue">Overdue only</option>
+      <option value="Due Soon">Due soon (within 12h)</option>
+      <option value="On Track">On track</option>
+    </select>
+    <select id="queueAge">
+      <option value="All">Any age</option>
+      <option value="1">Older than 1 day</option>
+      <option value="3">Older than 3 days</option>
+      <option value="7">Older than 7 days</option>
+    </select>
+    <button class="filter-reset" id="queueClear">Reset</button>
+  </section>
+
+  <section class="queue-summary">
+    <div class="queue-stat"><span>Open</span><strong>{{ queue_stats.unresolved }}</strong><small>unresolved issues</small></div>
+    <div class="queue-stat queue-stat-hot"><span>High priority</span><strong>{{ queue_stats.high }}</strong><small>need fast review</small></div>
+    <div class="queue-stat queue-stat-alert"><span>Overdue SLA</span><strong>{{ queue_stats.overdue or 0 }}</strong><small>past target turnaround</small></div>
+    <div class="queue-stat"><span>Repeated / Upvoted</span><strong>{{ queue_stats.repeated }}</strong><small>connected signals</small></div>
+    <div class="queue-stat"><span>Critical</span><strong>{{ queue_stats.critical }}</strong><small>score ≥ 75</small></div>
+    <div class="queue-stat"><span>Oldest open</span><strong>{{ queue_stats.oldest_days }}d</strong><small>age of oldest signal</small></div>
+  </section>
+
+  <section class="queue-list" id="queueList">
+    {% for issue in issues %}
+    <a class="queue-item reveal" 
+       data-priority="{{ issue.priority }}" 
+       data-status="{{ issue.status }}" 
+       data-age="{{ issue.age_days }}" 
+       data-department="{{ issue.department or 'Unassigned' }}"
+       data-sla="{{ issue.sla_status or 'On Track' }}"
+       data-search="{{ (issue.public_code ~ ' ' ~ issue.category ~ ' ' ~ (issue.department or '') ~ ' ' ~ (issue.location or '') ~ ' ' ~ issue.description)|lower|e }}" 
+       href="/submission/{{ issue.id }}">
+      <div class="queue-rank">{{ '%02d'|format(loop.index) }}</div>
+      <div class="queue-main">
+        <div class="detail-code">
+          <span>{{ issue.public_code }}</span>
+          <span class="type-pill">{{ issue.category }}</span>
+          {% if issue.department %}<span class="dept-tag">⚡ {{ issue.department }}</span>{% endif %}
+        </div>
+        <h2>{{ (issue.description or "")[:110] }}{% if issue.description|length > 110 %}…{% endif %}</h2>
+        <p>
+          {{ issue.location or 'Location not specified' }} · 
+          {{ issue.frequency or 'Frequency not specified' }} · 
+          {{ issue.age_days|round(1) }}d old
+          {% if issue.upvotes and issue.upvotes > 0 %} · <b class="upvote-highlight">▲ {{ issue.upvotes }} student confirmations</b>{% endif %}
+        </p>
+      </div>
+      <div class="queue-score">
+        <strong>{{ issue.attention_score }}</strong>
+        <span>attention</span>
+      </div>
+      <div class="queue-signals">
+        <span class="priority-badge priority-{{ issue.priority|lower|replace(' ','-') }}">{{ issue.priority }}</span>
+        <span class="status-pill status-{{ issue.status|lower|replace(' ','-') }}">{{ issue.status }}</span>
+        <span class="sla-pill {{ issue.sla_class }}">{{ issue.sla_label }}</span>
+        {% if issue.similar_count %}<span class="related-pill">{{ issue.similar_count }} related</span>{% endif %}
+      </div>
+      <strong class="queue-go">→</strong>
+    </a>
+    {% else %}
+    <div class="empty-card">
+      <span>✓</span>
+      <h2>Queue is clear.</h2>
+      <p>There are no unresolved issue reports right now.</p>
+      <a class="button small dark" href="/dashboard">Back to overview</a>
+    </div>
+    {% endfor %}
+  </section>
+  <div class="queue-no-results empty-card" id="queueNoResults" hidden>
+    <span>⌕</span>
+    <h2>No matching issues.</h2>
+    <p>Try widening the filters or clearing your search.</p>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='queue.js') }}?v=v7-ent" defer></script>
+{% endblock %}

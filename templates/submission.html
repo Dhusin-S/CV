@@ -1,0 +1,201 @@
+{% extends 'admin_base.html' %}
+{% block title %}{{ item.public_code }} · Submission Detail · Campus Voice{% endblock %}
+{% block content %}
+<main class="admin-page-content detail page-enter">
+  <a class="back-link" href="/dashboard">← Back to overview</a>
+  <div class="detail-heading">
+    <div>
+      <div class="detail-code">
+        <span>{{ item.public_code }}</span>
+        <span class="type-pill type-{{ item.submission_type|lower }}">{{ item.submission_type }}</span>
+        {% if item.department %}<span class="dept-tag">⚡ {{ item.department }}</span>{% endif %}
+      </div>
+      <h1>{{ item.category }}</h1>
+      <p>{{ item.location or 'Location not provided' }} · Submitted {{ item.created_at }}</p>
+    </div>
+    <div class="head-right-actions">
+      {% if item.submission_type=='Issue' %}
+      <span class="priority-badge priority-{{ item.priority|lower }}">{{ item.priority }} priority</span>
+      {% endif %}
+      <span class="status-pill status-{{ item.status|lower|replace(' ','-') }}">{{ item.status }}</span>
+      <span class="sla-pill {{ item.sla_class }}">{{ item.sla_label }}</span>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-main-col">
+      <article class="record-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">STUDENT MESSAGE</span>
+            <h2>What was shared</h2>
+          </div>
+          <span>#{{ item.id }}</span>
+        </div>
+        <div class="message-body">{{ item.description }}</div>
+        
+        {% if item.desired_outcome %}
+        <div class="outcome-box">
+          <span>DESIRED OUTCOME</span>
+          <p>{{ item.desired_outcome }}</p>
+        </div>
+        {% endif %}
+
+        {% if tags %}
+        <div class="tags-row">
+          <small>AI KEY TOPICS:</small>
+          {% for t in tags %}<span class="tag-chip">#{{ t }}</span>{% endfor %}
+        </div>
+        {% endif %}
+
+        {% if item.image_filename %}
+        <div class="evidence">
+          <span class="eyebrow">ATTACHED EVIDENCE</span>
+          <img src="{{ url_for('uploaded_file', filename=item.image_filename) }}" alt="Attached evidence" loading="lazy">
+        </div>
+        {% endif %}
+      </article>
+
+      {% if similar %}
+      <article class="record-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">CONNECTED SIGNALS</span>
+            <h2>Related submissions</h2>
+            <p>Semantic matches in the same feedback type and category.</p>
+          </div>
+          <span>{{ similar|length }} matches</span>
+        </div>
+        <div class="related-list">
+          {% for s in similar %}
+          <a href="/submission/{{ s.id }}">
+            <div>
+              <b>{{ s.category }} {% if s.location %}· {{ s.location }}{% endif %}</b>
+              <p>{{ s.description }}</p>
+            </div>
+            <strong>{{ (s.similarity*100)|int }}% match</strong>
+          </a>
+          {% endfor %}
+        </div>
+      </article>
+      {% endif %}
+
+      <article class="record-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">WORKFLOW HISTORY</span>
+            <h2>Audit & action trail</h2>
+          </div>
+        </div>
+        <div class="admin-timeline">
+          {% for event in history %}
+          <div class="admin-event {% if loop.last %}current{% endif %}">
+            <span></span>
+            <div>
+              <b>{% if event.to_status %}{{ event.to_status }}{% else %}{{ event.event_type|replace('_',' ')|title }}{% endif %}</b>
+              <small>{{ event.created_at }}</small>
+              {% if event.note %}
+              <p>{{ event.note }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </article>
+    </div>
+
+    <aside class="detail-side-col">
+      <article class="record-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">AI DECISION SUPPORT</span>
+            <h2>Triage signals</h2>
+          </div>
+        </div>
+        <div class="signal-grid-admin">
+          <div><span>Sentiment</span><b class="sentiment-{{ item.sentiment|lower }}">{{ item.sentiment }}</b></div>
+          <div><span>Emotional tone</span><b>{{ item.emotion or 'Neutral' }}</b></div>
+          <div><span>Severity</span><b>{{ item.severity }}</b></div>
+          <div><span>Priority</span><b>{{ item.priority }}</b></div>
+          <div><span>SLA target</span><b class="{{ item.sla_class }}">{{ item.sla_label }}</b></div>
+          <div><span>Community confirms</span><b>▲ {{ item.upvotes or 0 }} students</b></div>
+          <div><span>Attention score</span><b>{{ item.attention_score or 0 }}/100</b></div>
+          <div><span>Age</span><b>{{ item.age_days|round(1) }}d</b></div>
+          <div class="full-signal">
+            <span>Priority explanation</span>
+            <b>{{ item.priority_reason or 'Standard review queue.' }}</b>
+          </div>
+        </div>
+      </article>
+
+      <article class="record-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">DEPARTMENT ROUTING</span>
+            <h2>Assign unit</h2>
+          </div>
+        </div>
+        <form class="admin-form" method="POST" action="/submission/{{ item.id }}/department">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>Responsible Campus Unit
+            <select name="department">
+              {% for d in departments %}
+              <option value="{{ d }}" {% if d == item.department %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="button outline full" type="submit">Re-assign department</button>
+        </form>
+      </article>
+
+      <article class="record-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">WORKFLOW</span>
+            <h2>Update status</h2>
+          </div>
+        </div>
+        <form class="admin-form" method="POST" action="/submission/{{ item.id }}/status">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>New status
+            <select name="status">
+              {% for s in status_options %}
+              <option {% if s==item.status %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>Resolution / status note <em>(visible on tracker & board)</em>
+            <textarea name="status_note" rows="3" maxlength="500" placeholder="e.g. Technician deployed. Replaced faulty circuit breaker.">{{ item.resolution_note or '' }}</textarea>
+          </label>
+          <button class="button dark full" type="submit">Save workflow update <b>→</b></button>
+        </form>
+      </article>
+
+      <article class="record-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">INTERNAL USE ONLY</span>
+            <h2>Admin notes</h2>
+          </div>
+        </div>
+        <form class="admin-form" method="POST" action="/submission/{{ item.id }}/notes">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <textarea name="admin_notes" rows="5" maxlength="2000" placeholder="Private notes for staff and administration…">{{ item.admin_notes or '' }}</textarea>
+          <button class="button outline full" type="submit">Save internal notes</button>
+        </form>
+      </article>
+
+      <article class="record-card identity-card">
+        <div class="record-head">
+          <div>
+            <span class="eyebrow">SUBMITTER</span>
+            <h2>Identity</h2>
+          </div>
+        </div>
+        <b>{% if item.anonymous %}Anonymous submission{% else %}{{ item.student_name or 'Name not provided' }}{% endif %}</b>
+        <p>{% if item.anonymous %}Student identity protected by privacy switch.{% else %}Identity provided voluntarily.{% endif %}</p>
+      </article>
+    </aside>
+  </div>
+</main>
+{% endblock %}

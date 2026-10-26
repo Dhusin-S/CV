@@ -1,0 +1,102 @@
+{% extends 'admin_base.html' %}
+{% block title %}Settings · Campus Voice{% endblock %}
+{% block content %}
+<main class="admin-page-content settings-page page-enter">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">ADMINISTRATION & CONTROL</span>
+      <h1>System <em>settings.</em></h1>
+      <p>Manage authentication credentials, inspect SLA thresholds, and control demonstration data.</p>
+    </div>
+  </div>
+
+  {% if success %}
+  <div class="alert success"><strong>Success:</strong> {{ success }}</div>
+  {% endif %}
+  {% if error %}
+  <div class="alert error"><strong>Error:</strong> {{ error }}</div>
+  {% endif %}
+
+  <div class="settings-grid">
+    <section class="panel settings-card">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">SECURITY CREDENTIALS</span>
+          <h2>Change Admin Password</h2>
+          <p>Update the password used to access the operations command center.</p>
+        </div>
+      </div>
+      <form class="admin-form" method="POST" action="/admin/settings/password">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>Current Password
+          <input type="password" name="current_password" required placeholder="Enter current password">
+        </label>
+        <label>New Password (min 4 characters)
+          <input type="password" name="new_password" minlength="4" required placeholder="Enter new password">
+        </label>
+        <label>Confirm New Password
+          <input type="password" name="confirm_password" minlength="4" required placeholder="Re-enter new password">
+        </label>
+        <button class="button dark" type="submit">Update Password <b>→</b></button>
+      </form>
+    </section>
+
+    <section class="panel settings-card">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">OPERATIONAL SLAs</span>
+          <h2>Resolution Targets</h2>
+          <p>Institutional turnaround windows mapped by priority level.</p>
+        </div>
+      </div>
+      <div class="sla-config-list">
+        <div class="sla-config-item">
+          <div>
+            <strong>High Priority SLA</strong>
+            <small>Safety, electrical hazards, health failures</small>
+          </div>
+          <span class="sla-pill sla-overdue">24 Hours Target</span>
+        </div>
+        <div class="sla-config-item">
+          <div>
+            <strong>Medium Priority SLA</strong>
+            <small>Broken equipment, repeated complaints, dirty washrooms</small>
+          </div>
+          <span class="sla-pill sla-warning">72 Hours Target</span>
+        </div>
+        <div class="sla-config-item">
+          <div>
+            <strong>Low Priority SLA</strong>
+            <small>Minor cosmetic issues, single reports</small>
+          </div>
+          <span class="sla-pill sla-ok">7 Days Target</span>
+        </div>
+        <div class="sla-config-item">
+          <div>
+            <strong>Suggestions Review</strong>
+            <small>Campus improvement ideas review window</small>
+          </div>
+          <span class="sla-pill sla-ok">10 Days Target</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel settings-card">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">DEMO & EVALUATION UTILITIES</span>
+          <h2>Seeder & Testing Tools</h2>
+          <p>Instantly generate realistic campus activity across all departments for presentations.</p>
+        </div>
+      </div>
+      <div class="demo-actions-box">
+        <p>Populate the database with realistic sample issues, suggestions, appreciations, and SLA states across multiple campus blocks:</p>
+        <form method="POST" action="/admin/reset-demo" onsubmit="return confirm('Seed demo submissions into the database?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="button outline" type="submit">Seed Realistic Demo Submissions 🌱</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10120f"><meta name="description" content="Campus Voice — structured student feedback and campus improvement platform.">
+<title>{% block title %}Campus Voice{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=v7-ent">
+</head>
+<body class="public-shell">
+<div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+<header class="public-nav wrap">
+  <a href="/" class="brand" aria-label="Campus Voice home"><span class="brand-icon">CV</span><span><strong>Campus Voice</strong><small>Make campus better, together.</small></span></a>
+  <nav aria-label="Public navigation">
+    <a href="/board" class="nav-link {% if request.path=='/board' %}active{% endif %}">Public Board <span>✦</span></a>
+    <a href="/track" class="nav-link {% if request.path=='/track' %}active{% endif %}">Track submission <span>↗</span></a>
+  </nav>
+</header>
+{% block content %}{% endblock %}
+<footer class="public-footer wrap">
+  <div><strong>Campus Voice</strong><span>Structured feedback for a better campus.</span></div>
+  <div>
+    <a href="/board" style="color:inherit;text-decoration:none;">Campus Transparency</a>
+    <span class="footer-dot">•</span>
+    <span>Private by design</span>
+    <span class="footer-dot">•</span>
+    <span>Built for action</span>
+  </div>
+</footer>
+<script src="{{ url_for('static', filename='app.js') }}?v=v7-ent" defer></script>
+{% block scripts %}{% endblock %}
+</body></html>

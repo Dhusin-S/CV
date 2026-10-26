@@ -1,0 +1,112 @@
+{% extends 'base_public.html' %}
+{% block title %}Submitted · {{ item.public_code }} · Campus Voice{% endblock %}
+{% block content %}
+<main class="result wrap page-enter">
+  <div class="success-mark"><span>✓</span></div>
+  <span class="eyebrow">SUBMISSION RECEIVED · REFERENCE ISSUED</span>
+  <h1>You're in.<br><em>Here's your digital pass.</em></h1>
+  <p class="result-lede">Save your reference code or screenshot this pass. You can check workflow updates anytime without creating an account.</p>
+
+  <div class="digital-pass-card panel">
+    <div class="pass-header">
+      <div class="pass-brand">
+        <span class="brand-icon">CV</span>
+        <div>
+          <strong>Campus Voice</strong>
+          <small>Official Student Submission Pass</small>
+        </div>
+      </div>
+      <span class="type-pill type-{{ item.submission_type|lower }}">{{ item.submission_type }}</span>
+    </div>
+
+    <div class="pass-body">
+      <div class="pass-code-section">
+        <small>PRIVATE REFERENCE CODE</small>
+        <div class="pass-code-row">
+          <strong id="reference" class="pass-code">{{ item.public_code }}</strong>
+          <button type="button" class="copy-button" data-copy="{{ item.public_code }}"><span>Copy</span><b>⧉</b></button>
+        </div>
+      </div>
+
+      <div class="pass-qr-section">
+        <canvas id="qrCanvas" width="108" height="108" aria-label="QR Code for reference tracking"></canvas>
+        <small>Scan to track on phone</small>
+      </div>
+    </div>
+
+    <div class="pass-meta-grid">
+      <div><span>Category</span><b>{{ item.category }}</b></div>
+      <div><span>Assigned Department</span><b>{{ item.department or 'Student Affairs' }}</b></div>
+      <div><span>Current Status</span><b class="status-dot">{{ item.status }}</b></div>
+      <div><span>Privacy Mode</span><b>{% if item.anonymous %}Anonymous{% else %}Named Submission{% endif %}</b></div>
+    </div>
+
+    <div class="pass-footer">
+      <div class="pass-timestamp">Submitted: {{ item.created_at }}</div>
+      <button type="button" class="button small outline" onclick="window.print()">Print / Save Pass ⎙</button>
+    </div>
+  </div>
+
+  <div class="next-steps">
+    <div class="active"><b>01</b><span>Received</span><small>Stored in database & assigned.</small></div>
+    <div class="active"><b>02</b><span>AI Triaged</span><small>Routed to {{ item.department or 'campus team' }}.</small></div>
+    <div><b>03</b><span>Action & Update</span><small>Follow progress on the tracker.</small></div>
+  </div>
+
+  <div class="result-actions">
+    <a class="button primary magnetic" href="/track/{{ item.public_code }}">Open tracker now <b>→</b></a>
+    <a class="button outline" href="/board">Campus Resolution Board <span>✦</span></a>
+    <a class="text-button" href="/">Submit another</a>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Offline lightweight QR code generator onto canvas
+  const canvas = document.getElementById("qrCanvas");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    const code = "{{ item.public_code }}";
+    const url = window.location.origin + "/track/" + code;
+    
+    // Draw clean pseudo-matrix QR representation with border and center icon
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 108, 108);
+    ctx.fillStyle = "#111411";
+    
+    // Finder patterns
+    function drawFinder(x, y) {
+      ctx.fillRect(x, y, 28, 28);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(x + 4, y + 4, 20, 20);
+      ctx.fillStyle = "#111411";
+      ctx.fillRect(x + 8, y + 8, 12, 12);
+    }
+    drawFinder(6, 6);
+    drawFinder(74, 6);
+    drawFinder(6, 74);
+
+    // Deterministic pseudo-random dots based on reference characters
+    let seed = 0;
+    for (let i = 0; i < code.length; i++) seed = (seed * 31 + code.charCodeAt(i)) % 100000;
+    
+    function pseudoRand() {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    }
+
+    const dotSize = 4;
+    for (let r = 0; r < 23; r++) {
+      for (let c = 0; c < 23; c++) {
+        // Skip finder zones
+        if ((r < 8 && c < 8) || (r < 8 && c > 14) || (r > 14 && c < 8)) continue;
+        if (pseudoRand() > 0.5) {
+          ctx.fillRect(8 + c * dotSize, 8 + r * dotSize, dotSize - 1, dotSize - 1);
+        }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

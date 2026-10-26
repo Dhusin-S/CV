@@ -1,0 +1,113 @@
+{% extends 'base_public.html' %}
+{% block title %}{{ item.public_code }} · Workflow Status · Campus Voice{% endblock %}
+{% block content %}
+<main class="track-detail wrap page-enter">
+  <div class="track-detail-head">
+    <div>
+      <div class="detail-tags-row">
+        <span class="eyebrow">REFERENCE {{ item.public_code }}</span>
+        <span class="type-pill type-{{ item.submission_type|lower }}">{{ item.submission_type }}</span>
+        {% if item.department %}<span class="dept-tag">⚡ {{ item.department }}</span>{% endif %}
+      </div>
+      <h1>{{ item.category }} <em>workflow.</em></h1>
+      <p>{{ item.location or 'Campus' }} · Submitted {{ item.created_at }}</p>
+    </div>
+    <div class="head-right-status">
+      <span class="big-status">{{ item.status }}</span>
+      {% if sla_info %}
+      <span class="sla-pill {{ sla_info.class }}">{{ sla_info.label }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if item.resolution_note %}
+  <section class="resolution-banner panel">
+    <div class="res-head">
+      <span class="res-check">✓</span>
+      <div>
+        <strong>Official Resolution Note</strong>
+        <small>Submitted by {{ item.department or 'Campus Administration' }}</small>
+      </div>
+    </div>
+    <p class="res-content">{{ item.resolution_note }}</p>
+  </section>
+  {% endif %}
+
+  <section class="timeline-card">
+    <div class="timeline-head">
+      <div>
+        <span class="eyebrow">AUDIT & PROGRESS TIMELINE</span>
+        <h2>Action history</h2>
+      </div>
+      <div class="timeline-actions">
+        <button type="button" class="upvote-btn" data-code="{{ item.public_code }}">
+          <span>▲ Me too (+1)</span>
+          <strong id="upvote-{{ item.public_code }}">{{ item.upvotes or 0 }}</strong>
+        </button>
+        <a class="button small outline" href="/track">Track another</a>
+      </div>
+    </div>
+    {% for event in history %}
+    <article class="timeline-item {% if loop.last %}current{% endif %}">
+      <span class="timeline-node">{% if loop.last %}●{% else %}✓{% endif %}</span>
+      <div>
+        <b>{% if event.to_status %}{{ event.to_status }}{% else %}{{ event.event_type|replace('_',' ')|title }}{% endif %}</b>
+        <small>{{ event.created_at }}</small>
+        {% if event.note and event.note not in ['Internal note updated'] %}
+        <p>{{ event.note }}</p>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+
+  <div class="tracking-summary panel">
+    <div><span>Reference</span><strong class="copy-val" data-copy="{{ item.public_code }}">{{ item.public_code }} ⧉</strong></div>
+    <div><span>Submitted</span><b>{{ item.created_at }}</b></div>
+    <div><span>Category</span><b>{{ item.category }}</b></div>
+    <div><span>Department</span><b>{{ item.department or 'Student Affairs' }}</b></div>
+    <div><span>Community Confirmations</span><b>{{ item.upvotes or 0 }} students</b></div>
+    <div><span>Privacy Mode</span><b>{% if item.anonymous %}Anonymous{% else %}{{ item.student_name or 'Named' }}{% endif %}</b></div>
+  </div>
+
+  {% if tags %}
+  <div class="detail-tags-section panel">
+    <small>EXTRACTED TOPIC TAGS</small>
+    <div class="tag-chips">
+      {% for tag in tags %}<span class="tag-chip">#{{ tag }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll(".upvote-btn").forEach(btn => {
+    btn.addEventListener("click", async function() {
+      const code = this.dataset.code;
+      if (!code) return;
+      this.disabled = true;
+      try {
+        const res = await fetch(`/api/upvote/${code}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        if (res.ok && data.upvotes !== undefined) {
+          const countEl = document.getElementById(`upvote-${code}`);
+          if (countEl) countEl.textContent = data.upvotes;
+          this.classList.add("upvoted");
+        } else {
+          alert(data.error || "Could not record confirmation.");
+        }
+      } catch (err) {
+        alert("Network error.");
+      } finally {
+        this.disabled = false;
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

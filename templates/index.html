@@ -1,0 +1,87 @@
+{% extends 'base_public.html' %}
+{% block title %}Campus Voice · Speak up. Shape what comes next.{% endblock %}
+{% block content %}
+<main class="home">
+<section class="hero wrap">
+  <div class="hero-copy reveal-on-load">
+    <div class="eyebrow"><i></i> STUDENT FEEDBACK / CAMPUS IMPROVEMENT PLATFORM</div>
+    <h1>Small signals.<br><em>Real change.</em></h1>
+    <p class="hero-lede">Report a problem, propose a better idea, or recognise something that works. Campus Voice turns everyday student experiences into clear, accountable campus action.</p>
+    <div class="hero-actions">
+      <a class="button primary magnetic" href="#feedback">Share feedback <b>→</b></a>
+      <a class="button outline" href="/board">Campus Resolution Board <span>✦</span></a>
+      <a class="text-button" href="/track">Track reference <span>↗</span></a>
+    </div>
+    <div class="trust-row"><span><b>01</b> Describe</span><span><b>02</b> AI Triage & Route</span><span><b>03</b> Track Resolution</span></div>
+  </div>
+  <div class="hero-art reveal-on-load delay-1" aria-hidden="true">
+    <div class="hero-grid"></div><div class="orb orb-one"></div><div class="orb orb-two"></div>
+    <div class="signal-card glass-float"><span class="signal-dot"></span><div><small>LIVE CAMPUS INTELLIGENCE</small><strong>Transparent workflow with SLA accountability.</strong></div><span class="signal-arrow">↗</span></div>
+    <div class="hero-panel glass-float"><div class="mini-label">FROM VOICE TO ACTION</div><div class="mini-step"><b>01</b><span>Capture student signal</span></div><div class="mini-step"><b>02</b><span>AI duplicate & SLA triage</span></div><div class="mini-step active"><b>03</b><span>Department execution</span></div><div class="mini-footer"><i></i> QR Digital Pass Included</div></div>
+    <div class="floating-chip chip-a">Anonymous option <span>✓</span></div><div class="floating-chip chip-b">Reference <span>CV-••••••••</span></div>
+  </div>
+</section>
+<section class="proof-strip wrap">
+  <div><strong>3</strong><span>feedback types</span></div>
+  <div><strong>AI</strong><span>live duplicate assist</span></div>
+  <div><strong>10</strong><span>campus departments</span></div>
+  <div><strong>SLA</strong><span>tracked turnaround</span></div>
+</section>
+
+<section id="feedback" class="composer-section wrap">
+  <div class="section-intro"><div><span class="eyebrow">YOUR VOICE</span><h2>Give the campus enough<br><em>to act on.</em></h2></div><p>Specific feedback travels further. Tell us <b>what happened</b>, <b>where</b>, and <b>what would help</b>.</p></div>
+  {% if errors %}<div class="alert error"><strong>Let's fix that.</strong><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  <form id="feedbackForm" class="composer" action="/submit" method="POST" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="composer-top"><div><span class="eyebrow">START HERE</span><h3>What are you sharing?</h3></div><div class="progress"><span id="progressText">0% complete</span><div><i id="progressBar"></i></div></div></div>
+    <div class="type-grid" id="typeGrid">
+      {% for t,icon,title,desc in [('Issue','!','Report a problem','Something is broken, unsafe, unavailable, delayed or affecting your experience.'),('Suggestion','✦','Suggest an improvement','An idea that could make learning or campus life noticeably better.'),('Appreciation','♡','Recognise something','Specific credit for a person, service, facility or experience that helped.')] %}
+      <label class="type-option {% if (form and form.get('submission_type')==t) or (not form and loop.first) %}selected{% endif %}"><input type="radio" name="submission_type" value="{{ t }}" {% if (form and form.get('submission_type')==t) or (not form and loop.first) %}checked{% endif %}><span class="type-icon">{{ icon }}</span><span><b>{{ title }}</b><small>{{ desc }}</small></span><i class="check">✓</i></label>
+      {% endfor %}
+    </div>
+    <div class="form-grid">
+      <div class="field full">
+        <label for="description">Describe it <span>required</span></label>
+        <textarea id="description" name="description" maxlength="{{ max_description }}" minlength="10" required placeholder="What happened? Include the place, effect, and useful context…">{{ form.get('description','') if form else '' }}</textarea>
+        <div class="field-meta"><span id="qualityHint">A clear description helps the right department understand and act quickly.</span><strong><b id="charCount">0</b>/{{ max_description }}</strong></div>
+
+        <!-- Live AI Pre-Check Assistant -->
+        <div class="ai-assist-box" id="aiAssistBox">
+          <div class="ai-assist-header">
+            <span class="ai-assist-badge">⚡ AI LIVE ASSIST</span>
+            <span id="aiQualityScore" class="ai-quality-pill">Start typing to evaluate...</span>
+          </div>
+          <div class="ai-assist-tags" id="aiTagsRow">
+            <span class="ai-tag clickable" id="aiCategoryTag" title="Click to apply this category automatically">
+              Suggested: <strong id="aiCategoryVal">—</strong> <span class="ai-apply-hint">Apply ↵</span>
+            </span>
+            <span class="ai-tag" id="aiToneTag">Tone: <strong id="aiToneVal">—</strong></span>
+            <span class="ai-tag" id="aiDeptTag">Route: <strong id="aiDeptVal">—</strong></span>
+          </div>
+          <div class="ai-duplicate-alert" id="aiDuplicateAlert" hidden>
+            <div class="dup-icon">⚠️</div>
+            <div class="dup-content">
+              <strong>Similar unresolved reports found:</strong>
+              <div id="aiDuplicateList" class="dup-list"></div>
+              <small class="dup-note">You can still submit your own, or confirm an existing report on the public board.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field"><label for="category">Category <span>required</span></label><select name="category" id="category" required>{% for c in categories %}<option {% if form and form.get('category')==c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="location">Where? <span>optional</span></label><select name="location" id="location"><option value="">Select an area</option>{% for area in campus_areas %}<option {% if form and form.get('location')==area %}selected{% endif %}>{{ area }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="frequency">How often? <span>optional</span></label><select name="frequency" id="frequency"><option value="">Select frequency</option>{% for x in frequencies %}<option {% if form and form.get('frequency')==x %}selected{% endif %}>{{ x }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="desired_outcome">What would help? <span>optional</span></label><input id="desired_outcome" name="desired_outcome" value="{{ form.get('desired_outcome','') if form else '' }}" maxlength="300" placeholder="e.g. Repair before tomorrow's 9 AM lab."></div>
+      <div class="field full guidance-box"><div class="guidance-icon">✦</div><div><b id="dynamicTitle">Write like a helpful report.</b><p id="dynamicHint">Mention the place, specific problem and effect. Avoid unnecessary personal phone numbers or credentials.</p></div></div>
+      <div class="field"><label for="nameField">Your name <span>optional</span></label><input id="nameField" name="student_name" value="{{ form.get('student_name','') if form else '' }}" maxlength="100" placeholder="You can leave this blank"></div>
+      <div class="field"><label for="image">Evidence <span>optional · 5 MB</span></label><label class="upload-box" for="image"><span>＋</span><div><b>Attach a photo</b><small>PNG, JPG or WEBP</small></div></label><input id="image" class="sr-only" type="file" name="image" accept="image/png,image/jpeg,image/webp"><div id="filePreview" class="file-preview hidden"></div></div>
+    </div>
+    <div class="privacy-row"><label class="switch"><input type="checkbox" name="anonymous" id="anonymous" {% if form and form.get('anonymous') %}checked{% endif %}><span></span></label><div><b>Keep my identity anonymous</b><small>Your name will not be attached to this submission. Your private reference and QR still work.</small></div><span class="privacy-badge">PRIVATE</span></div>
+    <div class="submit-row"><div class="draft-state" id="draftState">Drafts stay on this device.</div><button class="button primary magnetic" type="submit">Submit feedback <b>→</b></button></div>
+  </form>
+</section>
+<section class="feature-section wrap"><div class="section-intro"><div><span class="eyebrow">WHY IT WORKS</span><h2>Not a suggestion box.<br><em>An accountable loop.</em></h2></div><p>Each submission carries enough structured context to help a campus team triage, route to the right department, and track SLA delivery.</p></div><div class="feature-grid"><article><span>01</span><h3>Intelligent Triage</h3><p>Real-time category prediction, emotion analysis and semantic duplicate detection help students submit high-quality feedback.</p><div class="feature-line"></div></article><article><span>02</span><h3>Department Routing & SLAs</h3><p>Tickets route automatically to responsible campus units with strict SLA deadlines to prevent issues from stalling.</p><div class="feature-line"></div></article><article><span>03</span><h3>Transparent Resolution</h3><p>The Public Resolution Board and QR Digital Pass keep students updated every step of the way without exposing identities.</p><div class="feature-line"></div></article></div></section>
+<section class="closing wrap"><div><span class="eyebrow">READY WHEN YOU ARE</span><h2>One useful report can<br>start a <em>better day.</em></h2></div><a class="button dark magnetic" href="#feedback">Start a submission <b>→</b></a></section>
+</main>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base_public.html' %}
+{% block title %}Public Resolution Board · Campus Voice{% endblock %}
+{% block content %}
+<main class="board-page wrap page-enter">
+  <section class="board-hero">
+    <div class="hero-copy">
+      <div class="eyebrow"><i></i> CAMPUS TRANSPARENCY & ACTIONS</div>
+      <h1>Real problems.<br><em>Real resolutions.</em></h1>
+      <p class="hero-lede">See what the campus community is reporting and what changes the administration has put into motion. Every voice counts.</p>
+      <div class="hero-actions">
+        <a class="button primary magnetic" href="/#feedback">Submit feedback <b>→</b></a>
+        <a class="button outline" href="/track">Track your reference <span>↗</span></a>
+      </div>
+    </div>
+    <div class="board-stats-card glass-float">
+      <div class="mini-label">CAMPUS PULSE</div>
+      <div class="stat-row">
+        <div><strong>{{ items|length }}</strong><small>Active & resolved signals</small></div>
+        <div><strong>100%</strong><small>Anonymous-ready</small></div>
+      </div>
+      <div class="board-promise"><i>✓</i> Zero private student names exposed on public boards.</div>
+    </div>
+  </section>
+
+  <section class="board-controls panel">
+    <div class="search-field">
+      <span>⌕</span>
+      <input id="boardSearch" placeholder="Search campus resolutions, locations, or topics..." autocomplete="off">
+    </div>
+    <select id="boardCategoryFilter">
+      <option value="All">All Categories</option>
+      {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select>
+    <select id="boardStatusFilter">
+      <option value="All">All Actions</option>
+      <option value="Resolved">Resolved</option>
+      <option value="Implemented">Implemented</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Planned">Planned</option>
+    </select>
+  </section>
+
+  <section class="board-feed" id="boardFeed">
+    {% for item in items %}
+    <article class="board-card panel reveal" data-category="{{ item.category }}" data-status="{{ item.status }}" data-search="{{ (item.category ~ ' ' ~ item.location ~ ' ' ~ item.description ~ ' ' ~ (item.resolution_note or ''))|lower|e }}">
+      <div class="board-card-head">
+        <div class="board-tags">
+          <span class="type-pill type-{{ item.submission_type|lower }}">{{ item.submission_type }}</span>
+          <span class="category-tag">{{ item.category }}</span>
+          {% if item.department %}<span class="dept-tag">⚡ {{ item.department }}</span>{% endif %}
+        </div>
+        <span class="status-pill status-{{ item.status|lower|replace(' ','-') }}">{{ item.status }}</span>
+      </div>
+
+      <div class="board-card-body">
+        <h3>{{ item.description }}</h3>
+        {% if item.location %}
+        <div class="board-location"><span>📍</span> {{ item.location }}</div>
+        {% endif %}
+
+        {% if item.resolution_note %}
+        <div class="resolution-highlight">
+          <div class="res-label"><span>✓ ACTION TAKEN</span></div>
+          <p>{{ item.resolution_note }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="board-card-foot">
+        <div class="foot-meta">
+          <small>Updated {{ item.updated_at or item.created_at }}</small>
+          <span class="ref-link"><a href="/track/{{ item.public_code }}">{{ item.public_code }} ↗</a></span>
+        </div>
+        <button type="button" class="upvote-btn" data-code="{{ item.public_code }}" title="Confirm you are also experiencing this or support this">
+          <span class="upvote-icon">▲</span>
+          <span class="upvote-label">Me too</span>
+          <strong class="upvote-count" id="upvote-{{ item.public_code }}">{{ item.upvotes or 0 }}</strong>
+        </button>
+      </div>
+    </article>
+    {% else %}
+    <div class="empty-card">
+      <span>✦</span>
+      <h2>No public updates yet.</h2>
+      <p>As student submissions are reviewed and resolved by the campus team, they appear here.</p>
+      <a class="button primary" href="/#feedback">Share first feedback →</a>
+    </div>
+    {% endfor %}
+    <div class="board-no-results empty-card" id="boardNoResults" hidden>
+      <span>⌕</span>
+      <h2>No matching improvements found.</h2>
+      <p>Try clearing your filter or searching for a different keyword.</p>
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const search = document.getElementById("boardSearch");
+  const catFilter = document.getElementById("boardCategoryFilter");
+  const statusFilter = document.getElementById("boardStatusFilter");
+  const cards = Array.from(document.querySelectorAll(".board-card"));
+  const noResults = document.getElementById("boardNoResults");
+
+  function filterCards() {
+    const q = (search ? search.value : "").toLowerCase().trim();
+    const cat = catFilter ? catFilter.value : "All";
+    const st = statusFilter ? statusFilter.value : "All";
+    let visible = 0;
+
+    cards.forEach(card => {
+      const matchCat = cat === "All" || card.dataset.category === cat;
+      const matchStatus = st === "All" || card.dataset.status === st;
+      const matchSearch = !q || card.dataset.search.includes(q);
+      const show = matchCat && matchStatus && matchSearch;
+      card.style.display = show ? "" : "none";
+      if (show) visible++;
+    });
+
+    if (noResults) {
+      noResults.hidden = visible > 0 || cards.length === 0;
+    }
+  }
+
+  if (search) search.addEventListener("input", filterCards);
+  if (catFilter) catFilter.addEventListener("change", filterCards);
+  if (statusFilter) statusFilter.addEventListener("change", filterCards);
+
+  // Upvote handling
+  document.querySelectorAll(".upvote-btn").forEach(btn => {
+    btn.addEventListener("click", async function() {
+      const code = this.dataset.code;
+      if (!code) return;
+      this.disabled = true;
+      try {
+        const res = await fetch(`/api/upvote/${code}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        if (res.ok && data.upvotes !== undefined) {
+          const countEl = document.getElementById(`upvote-${code}`);
+          if (countEl) countEl.textContent = data.upvotes;
+          this.classList.add("upvoted");
+        } else {
+          alert(data.error || "Could not record confirmation.");
+        }
+      } catch (err) {
+        alert("Network error. Please try again.");
+      } finally {
+        this.disabled = false;
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

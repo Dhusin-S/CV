@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>{% block title %}Campus Voice · Admin{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=v7-ent">
+</head>
+<body class="admin-shell">
+<aside class="sidebar" id="sidebar">
+  <a href="/dashboard" class="admin-brand">
+    <span class="brand-icon">CV</span>
+    <span><strong>Campus Voice</strong><small>Operations console</small></span>
+  </a>
+  <div class="side-section">WORKSPACE</div>
+  <nav aria-label="Admin navigation">
+    <a class="side-link {% if request.path=='/dashboard' %}active{% endif %}" href="/dashboard"><i>⌂</i><span>Overview</span></a>
+    <a class="side-link {% if request.path=='/issues' %}active{% endif %}" href="/issues"><i>!</i><span>Priority queue</span></a>
+    <a class="side-link {% if request.path=='/insights' %}active{% endif %}" href="/insights"><i>◒</i><span>Insights</span></a>
+    <a class="side-link {% if request.path=='/admin/report' %}active{% endif %}" href="/admin/report"><i>📊</i><span>Executive report</span></a>
+  </nav>
+  <div class="side-divider"></div>
+  <div class="side-section">ACTIONS</div>
+  <nav>
+    <a class="side-link" href="/board" target="_blank"><i>↗</i><span>Public board</span></a>
+    <a class="side-link" href="/export.csv"><i>↓</i><span>Export CSV</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="admin-user">
+      <span>AD</span>
+      <div><b>Administrator</b><small>Authenticated session</small></div>
+    </div>
+    <a class="signout" href="/logout">Sign out <span>↗</span></a>
+  </div>
+</aside>
+
+<div class="admin-main">
+  <header class="topbar">
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
+    <div class="global-search">
+      <span>⌕</span>
+      <input id="globalSearch" aria-label="Search submissions" placeholder="Search feedback, department, reference…">
+      <kbd>/</kbd>
+    </div>
+    <div class="top-actions">
+      <span class="live-indicator"><i></i>Live SLA</span>
+      <button class="icon-btn" id="themeToggle" title="Toggle appearance" aria-label="Toggle appearance">◐</button>
+      <a class="avatar-link" href="/logout" aria-label="Sign out">AD</a>
+    </div>
+  </header>
+  {% block content %}{% endblock %}
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="{{ url_for('static', filename='admin.js') }}?v=v7-ent" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

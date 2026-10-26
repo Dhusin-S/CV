@@ -1,0 +1,174 @@
+{% extends 'admin_base.html' %}
+{% block title %}Overview · Operations Console · Campus Voice{% endblock %}
+{% block content %}
+<main class="admin-page-content dashboard-page">
+<section class="dashboard-hero">
+  <div>
+    <span class="eyebrow">CAMPUS VOICE / OPERATIONAL OVERVIEW</span>
+    <h1>See the signal.<br><em>Choose the next action.</em></h1>
+    <p>A calm operational view of what is arriving, which department is handling it, and what SLA targets need action.</p>
+  </div>
+  <div class="hero-meta">
+    <span id="generatedAt">Updating…</span>
+    <a href="/admin/report" class="button small outline">Executive Report 📊</a>
+    <button class="button small dark" id="refreshBtn">Refresh <b>↻</b></button>
+  </div>
+</section>
+
+<section class="filter-bar compact-filters" aria-label="Dashboard filters">
+  <div class="search-field">
+    <span>⌕</span>
+    <input id="filterSearch" placeholder="Search current view, reference or department…">
+  </div>
+  <select id="filterType" aria-label="Filter by type">
+    <option>All</option>
+    <option>Issue</option>
+    <option>Suggestion</option>
+    <option>Appreciation</option>
+  </select>
+  <select id="filterDepartment" aria-label="Filter by department">
+    <option value="All">All Departments</option>
+    {% for d in departments %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+  </select>
+  <select id="filterCategory" aria-label="Filter by category">
+    <option>All</option>
+    {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+  </select>
+  <select id="filterPriority" aria-label="Filter by priority">
+    <option>All</option>
+    <option>High</option>
+    <option>Medium</option>
+    <option>Low</option>
+  </select>
+  <select id="filterStatus" aria-label="Filter by status">
+    <option>All</option>
+    {% for s in ['New','Reviewing','In Progress','Resolved','Implemented'] %}<option>{{ s }}</option>{% endfor %}
+  </select>
+  <select id="filterRange" aria-label="Filter by date">
+    <option value="All">All time</option>
+    <option value="7d">7 days</option>
+    <option value="30d">30 days</option>
+    <option value="90d">90 days</option>
+  </select>
+  <button id="clearFilters" class="filter-reset">Reset</button>
+</section>
+
+<section class="kpi-grid kpi-four">
+  <article class="kpi kpi-primary">
+    <span>Total Feedback</span>
+    <strong id="kTotal">—</strong>
+    <small id="kTotalSub">Selected filter view</small>
+    <i>01</i>
+  </article>
+  <article class="kpi">
+    <span>Open Issues</span>
+    <strong id="kOpen">—</strong>
+    <small>Need a workflow action</small>
+    <i>02</i>
+  </article>
+  <article class="kpi">
+    <span>High Priority</span>
+    <strong id="kHigh">—</strong>
+    <small>Unresolved high urgency</small>
+    <i>03</i>
+  </article>
+  <article class="kpi">
+    <span>Resolution Rate</span>
+    <strong id="kRate">—</strong>
+    <small>Resolved issues</small>
+    <i>04</i>
+  </article>
+</section>
+
+<section class="signal-row">
+  <article class="panel emerging-panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">EMERGING SIGNAL</span>
+        <h2 id="emergingName">Analysing…</h2>
+        <p id="emergingText">Comparing recent activity with the previous week.</p>
+      </div>
+      <span class="signal-pulse"></span>
+    </div>
+    <div class="emerging-metrics">
+      <div><strong id="emergingGrowth">—</strong><small>change</small></div>
+      <div><strong id="emergingRecent">—</strong><small>recent reports</small></div>
+      <div><strong id="trendDirection">—</strong><small>momentum</small></div>
+    </div>
+  </article>
+  <article class="panel action-panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">NEXT BEST ACTION</span>
+        <h2 id="actionTitle">Loading…</h2>
+        <p id="actionText">Finding the highest-value unresolved record.</p>
+      </div>
+      <a id="actionLink" href="/issues">Open queue →</a>
+    </div>
+  </article>
+</section>
+
+<section class="focus-grid">
+  <article class="panel trend-panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">MOMENTUM</span>
+        <h2>Incoming feedback</h2>
+        <p>Daily volume in the selected view.</p>
+      </div>
+    </div>
+    <div id="trendChart" class="bar-chart"></div>
+  </article>
+  <article class="panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">CONCENTRATION</span>
+        <h2>Top categories</h2>
+        <p>Where student feedback is clustering.</p>
+      </div>
+      <a href="/insights">Insights →</a>
+    </div>
+    <div id="categoryBars" class="horizontal-bars"></div>
+  </article>
+</section>
+
+<section class="panel inbox-panel">
+  <div class="panel-head">
+    <div>
+      <span class="eyebrow">WORK QUEUE</span>
+      <h2>Recent submissions</h2>
+      <p id="resultCount">Loading…</p>
+    </div>
+    <div class="bulk-actions">
+      <select id="bulkStatus"><option value="">Bulk status</option></select>
+      <button class="button small dark" id="applyBulk">Apply</button>
+      <a class="button small outline" id="exportLink" href="/export.csv">Export</a>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAll" aria-label="Select all visible submissions"></th>
+          <th>Submission</th>
+          <th>Department</th>
+          <th>Type</th>
+          <th>Signal</th>
+          <th>Priority</th>
+          <th>SLA Status</th>
+          <th>Workflow</th>
+          <th>Age</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="inboxBody">
+        <tr><td colspan="10" class="table-loading"><span class="spinner"></span> Loading records…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='dashboard.js') }}?v=v7-ent" defer></script>
+{% endblock %}
